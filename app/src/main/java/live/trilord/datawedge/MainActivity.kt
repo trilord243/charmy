@@ -23,14 +23,14 @@ import live.trilord.datawedge.ui.theme.DatawedgeTheme
 class MainActivity : ComponentActivity() {
     private var jsonData by mutableStateOf<String?>(null)
     private var activeProfile by mutableStateOf<String?>(null)
+    private var profilesList by mutableStateOf<List<String>?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val intentFilter: IntentFilter = IntentFilter().apply {
             addAction("com.symbol.datawedge.api.RESULT_ACTION")
-            addAction("com.zebra.id_scanning.ACTION")
-
+            addAction("com.symbol.datawedge.api.RESULT_GET_PROFILES_LIST")
             addCategory(Intent.CATEGORY_DEFAULT)
         }
         registerReceiver(broadCastReceiver, intentFilter)
@@ -42,14 +42,13 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(innerPadding),
                         context = this@MainActivity,
                         jsonData = jsonData,
-                        activeProfile = activeProfile
-
+                        activeProfile = activeProfile,
+                        profilesList = profilesList
                     )
                 }
             }
         }
     }
-
 
     private val broadCastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -59,26 +58,42 @@ class MainActivity : ComponentActivity() {
                     val profileName = intent.getStringExtra("com.symbol.datawedge.api.RESULT_GET_ACTIVE_PROFILE")
                     activeProfile = profileName
                 }
+                intent.hasExtra("com.symbol.datawedge.api.RESULT_GET_PROFILES_LIST") -> {
+                    val profiles = intent.getStringArrayExtra("com.symbol.datawedge.api.RESULT_GET_PROFILES_LIST")
+                    profilesList = profiles?.toList()
+                }
                 else -> {
                     jsonData = bundle?.getString("com.symbol.datawedge.data_string")
                 }
             }
         }
     }
+
+    private fun getProfilesList() {
+        val intent = Intent().apply {
+            action = "com.symbol.datawedge.api.ACTION"
+            putExtra("com.symbol.datawedge.api.GET_PROFILES_LIST", "")
+        }
+        sendBroadcast(intent)
+    }
+
+    private fun switchToProfile(profileName: String) {
+        val intent = Intent().apply {
+            action = "com.symbol.datawedge.api.ACTION"
+            putExtra("com.symbol.datawedge.api.SWITCH_TO_PROFILE", profileName)
+        }
+        sendBroadcast(intent)
+    }
 }
 
 @Composable
-fun OCRButton(modifier: Modifier = Modifier, context: Context, jsonData: String?, activeProfile: String? ) {
-
-
-
-
-
-
-
-
-
-
+fun OCRButton(
+    modifier: Modifier = Modifier,
+    context: Context,
+    jsonData: String?,
+    activeProfile: String?,
+    profilesList: List<String>?
+) {
     val ACTION = "com.symbol.datawedge.api.ACTION"
 
     Column(modifier = modifier) {
@@ -91,8 +106,6 @@ fun OCRButton(modifier: Modifier = Modifier, context: Context, jsonData: String?
             Text(text = "Lectura de OCT")
         }
 
-
-
         Button(onClick = {
             val intent = Intent(ACTION).apply {
                 putExtra("com.symbol.datawedge.api.GET_ACTIVE_PROFILE", true)
@@ -102,8 +115,35 @@ fun OCRButton(modifier: Modifier = Modifier, context: Context, jsonData: String?
             Text(text = "Obtener Perfil Activo")
         }
 
+        Button(onClick = {
+            val intent = Intent(ACTION).apply {
+                putExtra("com.symbol.datawedge.api.GET_PROFILES_LIST", "")
+            }
+            context.sendBroadcast(intent)
+        }) {
+            Text(text = "Obtener Lista de Perfiles")
+        }
+
+        Button(onClick = {
+            val intent = Intent(ACTION).apply {
+                putExtra("com.symbol.datawedge.api.SWITCH_TO_PROFILE", "Profile0 (default)")
+            }
+            context.sendBroadcast(intent)
+        }) {
+            Text(text = "Cambiar a Perfil1")
+        }
+
         activeProfile?.let {
             Text(text = "Perfil Activo: $it")
+        }
+
+        profilesList?.let {
+            Column {
+                Text(text = "Perfiles Disponibles:")
+                it.forEach { profile ->
+                    Text(text = profile)
+                }
+            }
         }
 
         jsonData?.let {
@@ -123,6 +163,6 @@ fun OCRButton(modifier: Modifier = Modifier, context: Context, jsonData: String?
 @Composable
 fun OCRButtonPreview() {
     DatawedgeTheme {
-        OCRButton(context = LocalContext.current, jsonData = "Sample JSON Data", activeProfile = "Sample Profile")
+        OCRButton(context = LocalContext.current, jsonData = "Sample JSON Data", activeProfile = "Sample Profile", profilesList = listOf("Profile1", "Profile2"))
     }
 }
