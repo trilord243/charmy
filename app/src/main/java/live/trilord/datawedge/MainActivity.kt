@@ -31,6 +31,7 @@ class MainActivity : ComponentActivity() {
         val intentFilter: IntentFilter = IntentFilter().apply {
             addAction("com.symbol.datawedge.api.RESULT_ACTION")
             addAction("com.symbol.datawedge.api.RESULT_GET_PROFILES_LIST")
+            addAction("com.zebra.id_scanning.ACTION")
             addCategory(Intent.CATEGORY_DEFAULT)
         }
         registerReceiver(broadCastReceiver, intentFilter)
