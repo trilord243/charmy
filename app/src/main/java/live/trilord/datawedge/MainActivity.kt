@@ -1,5 +1,6 @@
 package live.trilord.datawedge
 
+
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -8,16 +9,22 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.font.FontWeight
+
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
 import live.trilord.datawedge.ui.theme.DatawedgeTheme
 
 class MainActivity : ComponentActivity() {
@@ -39,14 +46,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             DatawedgeTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    OCRButton(
-                        modifier = Modifier.padding(innerPadding),
-                        context = this@MainActivity,
-                        jsonData = jsonData,
-                        activeProfile = activeProfile,
-                        profilesList = profilesList,
-                        setConfig = { setConfig("TEST1") }
-                    )
+                    OCRButton(modifier = Modifier.padding(innerPadding), jsonData = jsonData)
                 }
             }
         }
@@ -64,9 +64,8 @@ class MainActivity : ComponentActivity() {
                     val profiles = intent.getStringArrayExtra("com.symbol.datawedge.api.RESULT_GET_PROFILES_LIST")
                     profilesList = profiles?.toList()
                 }
-                else -> {
+                intent.hasExtra("com.symbol.datawedge.data_string") -> {
                     jsonData = bundle?.getString("com.symbol.datawedge.data_string")
-                    println("Hson data: $jsonData")
                 }
             }
         }
@@ -87,13 +86,14 @@ class MainActivity : ComponentActivity() {
         }
         sendBroadcast(intent)
     }
+
     private fun setConfig(profileName: String) {
         val intent = Intent("com.symbol.datawedge.api.ACTION")
         val configBundle = Bundle().apply {
             putString("PROFILE_NAME", profileName)
             putBundle("APP_LIST", Bundle().apply {
-                putString("PACKAGE_NAME", packageName)  // package name of the app to associate
-                putStringArray("ACTIVITY_LIST", arrayOf("*"))  // * for all activities
+                putString("PACKAGE_NAME", packageName)
+                putStringArray("ACTIVITY_LIST", arrayOf("*"))
             })
             putParcelableArray("PLUGIN_CONFIG", arrayOf(
                 Bundle().apply {
@@ -125,103 +125,38 @@ class MainActivity : ComponentActivity() {
                     putString("intent_output_enabled", "true")
                     putString("intent_action", "com.zebra.id_scanning.ACTION")
                     putString("intent_category", Intent.CATEGORY_DEFAULT)
-                    putString("intent_delivery", "2")  // 2 = Broadcast intent
+                    putString("intent_delivery", "2")
                 })
             })
         }
         intent.putExtra("com.symbol.datawedge.api.SET_CONFIG", configBundle)
         sendBroadcast(intent)
     }
-
-
 }
 
 @Composable
-fun OCRButton(
-    modifier: Modifier = Modifier,
-    context: Context,
-    jsonData: String?,
-    activeProfile: String?,
-    profilesList: List<String>?,
-    setConfig: () -> Unit = {}
-) {
-    val context= LocalContext.current
-    val ACTION = "com.symbol.datawedge.api.ACTION"
+fun OCRButton(modifier: Modifier = Modifier, jsonData: String?) {
+    val context = LocalContext.current
 
-    Column(modifier = modifier) {
 
-        Button(onClick = {
-            val intent = Intent(context,SecondActivity::class.java)
-            context.startActivity(intent)
-        }) {
-            Text("Go to Second Activity")
+    if (jsonData?.contains("chocolate", ignoreCase = true) == true) {
 
+        val intent = Intent(context, SecondActivity::class.java).apply {
+            putExtra("boxDesc", "chocolate")
+            putExtra("jsonData", jsonData)
         }
+        context.startActivity(intent)
+    }
 
-        Button(onClick = {
-            val intent = Intent(ACTION).apply {
-                putExtra("com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "START_SCANNING")
-            }
-            context.sendBroadcast(intent)
-        }) {
-            Text(text = "Lectura de OCT")
-        }
-
-        Button(onClick = { setConfig() }) {
-            Text(text = "   Profileee")
-
-        }
-
-        Button(onClick = {
-            val intent = Intent(ACTION).apply {
-                putExtra("com.symbol.datawedge.api.GET_ACTIVE_PROFILE", true)
-            }
-            context.sendBroadcast(intent)
-        }) {
-            Text(text = "Obtener Perfil Activo")
-        }
-
-        Button(onClick = {
-            val intent = Intent(ACTION).apply {
-                putExtra("com.symbol.datawedge.api.GET_PROFILES_LIST", "")
-            }
-            context.sendBroadcast(intent)
-        }) {
-            Text(text = "Obtener Lista de Perfiles")
-        }
-
-        Button(onClick = {
-            val intent = Intent(ACTION).apply {
-                putExtra("com.symbol.datawedge.api.SWITCH_TO_PROFILE", "Profile0 (default)")
-            }
-            context.sendBroadcast(intent)
-        }) {
-            Text(text = "Cambiar a Perfil1")
-        }
-
-        activeProfile?.let {
-            Text(text = "Perfil Activo: $it")
-        }
-
-        profilesList?.let {
-            Column {
-                Text(text = "Perfiles Disponibles:")
-                it.forEach { profile ->
-                    Text(text = profile)
-                }
-            }
-        }
-
-        jsonData?.let {
-            when {
-                it.contains("chocolate", ignoreCase = true) -> {
-                    Text(text = it)
-                }
-                else -> {
-                    Text(text = it)
-                }
-            }
-        }
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Escanee la caja para extraer su información",
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(16.dp)
+        )
     }
 }
-
