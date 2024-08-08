@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import android.provider.ContactsContract.Data
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
@@ -46,11 +47,11 @@ class SecondActivity : ComponentActivity() {
         }
         registerReceiver(broadCastReceiver, intentFilter)
 
-        val jsonData = intent.getStringExtra("jsonData")
+        val nameProduct = intent.getStringExtra("nombreProducto")
 
         setContent {
             DatawedgeTheme {
-                SecondScreen(jsonData=jsonData,showDialog=showDialog)
+                SecondScreen(nameProduct=nameProduct,showDialog=showDialog,barocdes = barocdes)
             }
         }
     }
@@ -68,8 +69,16 @@ class SecondActivity : ComponentActivity() {
                     profilesList = profiles?.toList()
                 }
                 else -> {
+
+
                     barocdes = bundle?.getString("com.symbol.datawedge.data_string")
+
+
+
                     showDialog = true
+
+
+
 
                 }
             }
@@ -78,22 +87,29 @@ class SecondActivity : ComponentActivity() {
 }
 
 @Composable
-fun SecondScreen(jsonData: String?, showDialog: Boolean) {
+fun SecondScreen(nameProduct: String?, showDialog: Boolean,barocdes:String?) {
     val context= LocalContext.current
 
+
     var quantity by remember { mutableStateOf("") }
+    val codigoBarra= nameProduct?.let { DataFixed.get(it) }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        if (!showDialog) {
-            Text("Lea los distintos codigos de barras", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        } else {
-            Text(text = "Caja de $jsonData")
+
+
+        if (barocdes != null  && barocdes.contains(codigoBarra.toString()) ) {
+            Text(text = "Caja de $nameProduct")
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(text =  "Description: ${DataFixed.getDesc(codigoBarra.toString())}                         ")
             Spacer(modifier = Modifier.height(16.dp))
 
+            Text(text = "Codigo: $codigoBarra")
             TextField(
                 value = quantity,
                 onValueChange = { quantity = it },
@@ -117,8 +133,12 @@ fun SecondScreen(jsonData: String?, showDialog: Boolean) {
                 Text("Enviar Cantidad")
             }
 
+        }else{
+
+            Text("Lea los distintos codigos de barras", fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
 
 
     }
 }
+
