@@ -44,7 +44,8 @@ class MainActivity : ComponentActivity() {
                         context = this@MainActivity,
                         jsonData = jsonData,
                         activeProfile = activeProfile,
-                        profilesList = profilesList
+                        profilesList = profilesList,
+                        setConfig = { setConfig("TEST1") }
                     )
                 }
             }
@@ -65,6 +66,7 @@ class MainActivity : ComponentActivity() {
                 }
                 else -> {
                     jsonData = bundle?.getString("com.symbol.datawedge.data_string")
+                    println("Hson data: $jsonData")
                 }
             }
         }
@@ -85,6 +87,53 @@ class MainActivity : ComponentActivity() {
         }
         sendBroadcast(intent)
     }
+    private fun setConfig(profileName: String) {
+        val intent = Intent("com.symbol.datawedge.api.ACTION")
+        val configBundle = Bundle().apply {
+            putString("PROFILE_NAME", profileName)
+            putBundle("APP_LIST", Bundle().apply {
+                putString("PACKAGE_NAME", packageName)  // package name of the app to associate
+                putStringArray("ACTIVITY_LIST", arrayOf("*"))  // * for all activities
+            })
+            putParcelableArray("PLUGIN_CONFIG", arrayOf(
+                Bundle().apply {
+                    putString("PLUGIN_NAME", "OCR")
+                    putString("RESET_CONFIG", "true")
+                    putBundle("PARAM_LIST", Bundle().apply {
+                        putString("FREE_FORM_ENABLED", "false")
+                    })
+                },
+                Bundle().apply {
+                    putString("PLUGIN_NAME", "BARCODE")
+                    putString("RESET_CONFIG", "true")
+                    putBundle("PARAM_LIST", Bundle().apply {
+                        putString("scanner_input_enabled", "true")
+                    })
+                },
+                Bundle().apply {
+                    putString("PLUGIN_NAME", "WORKFLOW")
+                    putString("RESET_CONFIG", "true")
+                    putBundle("PARAM_LIST", Bundle().apply {
+                        putString("workflow_input_enabled", "false")
+                    })
+                }
+            ))
+            putBundle("OUTPUT_PLUGIN", Bundle().apply {
+                putString("PLUGIN_NAME", "INTENT")
+                putString("RESET_CONFIG", "true")
+                putBundle("PARAM_LIST", Bundle().apply {
+                    putString("intent_output_enabled", "true")
+                    putString("intent_action", "com.zebra.id_scanning.ACTION")
+                    putString("intent_category", Intent.CATEGORY_DEFAULT)
+                    putString("intent_delivery", "2")  // 2 = Broadcast intent
+                })
+            })
+        }
+        intent.putExtra("com.symbol.datawedge.api.SET_CONFIG", configBundle)
+        sendBroadcast(intent)
+    }
+
+
 }
 
 @Composable
@@ -93,11 +142,22 @@ fun OCRButton(
     context: Context,
     jsonData: String?,
     activeProfile: String?,
-    profilesList: List<String>?
+    profilesList: List<String>?,
+    setConfig: () -> Unit = {}
 ) {
+    val context= LocalContext.current
     val ACTION = "com.symbol.datawedge.api.ACTION"
 
     Column(modifier = modifier) {
+
+        Button(onClick = {
+            val intent = Intent(context,SecondActivity::class.java)
+            context.startActivity(intent)
+        }) {
+            Text("Go to Second Activity")
+
+        }
+
         Button(onClick = {
             val intent = Intent(ACTION).apply {
                 putExtra("com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "START_SCANNING")
@@ -105,6 +165,11 @@ fun OCRButton(
             context.sendBroadcast(intent)
         }) {
             Text(text = "Lectura de OCT")
+        }
+
+        Button(onClick = { setConfig() }) {
+            Text(text = "   Profileee")
+
         }
 
         Button(onClick = {
@@ -160,10 +225,3 @@ fun OCRButton(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun OCRButtonPreview() {
-    DatawedgeTheme {
-        OCRButton(context = LocalContext.current, jsonData = "Sample JSON Data", activeProfile = "Sample Profile", profilesList = listOf("Profile1", "Profile2"))
-    }
-}
